@@ -1,50 +1,71 @@
-import * as WebBrowser from 'expo-web-browser';
-import { StyleSheet, TouchableOpacity } from 'react-native';
-
-import Colors from '../constants/Colors';
-import { MonoText } from './StyledText';
-import { Text, View } from './Themed';
+import { Text } from '@ui-kitten/components';
+import { useRef } from 'react';
+import { TouchableOpacity, Dimensions, StyleSheet, TextInput, View } from 'react-native';
+import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 
 export default function EditScreenInfo({ path }: { path: string }) {
+  const inputRef = useRef();
+  const sharedVal = useSharedValue(0);
+  const buttonTranslateY = useSharedValue(0);
+  const buttonOpacity = useSharedValue(0);
+  const DEFAULT_WIDTH = Dimensions.get('screen').width - 40;
+  const AnimatedWidth = useSharedValue(DEFAULT_WIDTH);
+
+  const buttonAnimStyles = useAnimatedStyle(() => {
+    return {
+      opacity: buttonOpacity.value,
+      transform: [{ translateY: buttonTranslateY.value }],
+    }
+  });
+
+  const valHandler = useAnimatedStyle(() => {
+    return {
+      transform: [{ translateY: sharedVal.value }],
+      width: AnimatedWidth.value,
+    }
+  });
+
+  const AnimatedTextInput = Animated.createAnimatedComponent(TextInput);
+  const AnimatedButton = Animated.createAnimatedComponent(TouchableOpacity);
+
   return (
-    <View>
-      <View style={styles.getStartedContainer}>
-        <Text
-          style={styles.getStartedText}
-          lightColor="rgba(0,0,0,0.8)"
-          darkColor="rgba(255,255,255,0.8)">
-          Open up the code for this screen:
-        </Text>
+    <View style={{ flex: 1, width: '100%', paddingHorizontal: 20, }}>
+      <View style={{ alignItems: 'center', flexDirection: 'row', marginTop: 100, }}>
+        <AnimatedTextInput
+          ref={inputRef}
+          placeholder='Artists, songs or podcasts'
+          onFocus={() => {
+            sharedVal.value = withTiming(-40);
+            buttonTranslateY.value = withTiming(-40);
+            AnimatedWidth.value = withTiming(DEFAULT_WIDTH - 60);
+            buttonOpacity.value = withTiming(1);
+          }}
+          onBlur={() => {
+            sharedVal.value = withTiming(0);
+            buttonTranslateY.value = withTiming(0);
+            AnimatedWidth.value = withTiming(DEFAULT_WIDTH);
+            buttonOpacity.value = withTiming(0);
+          }}
+          placeholderTextColor='grey'
+          style={[{
+            paddingLeft: 10,
+            fontSize: 14,
+            fontWeight: 'bold',
+            backgroundColor: 'white',
+            borderRadius: 4,
+            height: 45,
+            marginRight: 18,
+            width: DEFAULT_WIDTH,
+          }, valHandler]} />
 
-        <View
-          style={[styles.codeHighlightContainer, styles.homeScreenFilename]}
-          darkColor="rgba(255,255,255,0.05)"
-          lightColor="rgba(0,0,0,0.05)">
-          <MonoText>{path}</MonoText>
-        </View>
+        <AnimatedButton style={[buttonAnimStyles]} onPress={() => {
+          inputRef?.current?.blur()
 
-        <Text
-          style={styles.getStartedText}
-          lightColor="rgba(0,0,0,0.8)"
-          darkColor="rgba(255,255,255,0.8)">
-          Change any of the text, save the file, and your app will automatically update.
-        </Text>
-      </View>
-
-      <View style={styles.helpContainer}>
-        <TouchableOpacity onPress={handleHelpPress} style={styles.helpLink}>
-          <Text style={styles.helpLinkText} lightColor={Colors.light.tint}>
-            Tap here if your app doesn't automatically update after making changes
-          </Text>
-        </TouchableOpacity>
+        }}>
+          <Text style={{ color: 'white' }}>cancel</Text>
+        </AnimatedButton>
       </View>
     </View>
-  );
-}
-
-function handleHelpPress() {
-  WebBrowser.openBrowserAsync(
-    'https://docs.expo.io/get-started/create-a-new-app/#opening-the-app-on-your-phonetablet'
   );
 }
 
